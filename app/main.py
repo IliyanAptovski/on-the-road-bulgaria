@@ -12,7 +12,7 @@ from app.api.routes import auth, destinations, recommendations, sources, admin
 from app.core.config import settings
 from app.db import SessionLocal
 from app import models  # noqa: F401 - ensures all SQLAlchemy models are registered
-from app.seed import seed_destinations
+from app.seed import DESTINATIONS, seed_destinations
 from app.services.destination_import import read_destination_file, upsert_destinations
 
 logging.basicConfig(level=logging.INFO)
@@ -36,8 +36,15 @@ async def lifespan(app: FastAPI):
         command.upgrade(alembic_config, "head")
 
     settings.upload_dir.resolve().mkdir(parents=True, exist_ok=True)
+    settings.archive_dir.resolve().mkdir(parents=True, exist_ok=True)
     with SessionLocal() as db:
-        json_path = project_root / "app" / "data" / "destinations.json"
+        data_dir = project_root / "app" / "data"
+        json_path = data_dir / "locationsData.json"
+        if not json_path.is_file():
+            # Keep the previous destination locations working for existing installs.
+            json_path = data_dir / "destinations" / "destinations.json"
+        if not json_path.is_file():
+            json_path = data_dir / "destinations.json"
         imported = 0
         if json_path.is_file():
             records = read_destination_file(json_path)
@@ -45,9 +52,24 @@ async def lifespan(app: FastAPI):
                 created, updated = upsert_destinations(db, records)
                 imported = created + updated
                 logger.info("Imported %s destinations from %s (%s created, %s updated).", imported, json_path, created, updated)
-        seeded = seed_destinations(db)
-        if seeded:
-            logger.info("Loaded %s missing demonstration destinations; they remain marked unverified.", seeded)
+                # locationsData.json is the canonical dataset. Remove only
+                # legacy demo records from the seed list that are no longer in
+                # that dataset; admin-created destinations are preserved.
+                canonical_slugs = {record["slug"] for record in records}
+                legacy_slugs = {item["slug"] for item in DESTINATIONS}
+                legacy = db.query(models.Destination).filter(models.Destination.slug.in_(legacy_slugs)).all()
+                removed = 0
+                for destination in legacy:
+                    if destination.slug not in canonical_slugs:
+                        db.delete(destination)
+                        removed += 1
+                if removed:
+                    db.commit()
+                    logger.info("Removed %s legacy demo destinations superseded by locationsData.json.", removed)
+        else:
+            seeded = seed_destinations(db)
+            if seeded:
+                logger.info("Loaded %s missing demonstration destinations; they remain marked unverified.", seeded)
     yield
 
 
@@ -89,12 +111,21 @@ def create_app(*, initialize_database: bool = True) -> FastAPI:
     def health():
         return {"status": "ok", "app": settings.app_name, "environment": settings.app_env}
 
-    static_dir = Path(__file__).parent / "static"
+    static_dir = Path(__file__).parent / "static2"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    archive_pdf_dir = settings.archive_dir.resolve() / "pdfs"
+    archive_pdf_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/archive-pdfs", StaticFiles(directory=archive_pdf_dir), name="archive-pdfs")
 
     @app.get("/", include_in_schema=False)
     def home():
-        return FileResponse(static_dir / "index.html")
+        return FileResponse(static_dir / "index.html", headers={"Cache-Control": "no-store"})
+
+    # Serve the same relative asset paths used by the GitHub Pages build.
+    # Keeping these aliases means the frontend behaves identically in the
+    # FastAPI deployment and when the contents of static2 are published alone.
+    for asset_name in ("styles.css", "app.js", "bulgaria.geojson", "logo.png", "logo_without_text.png"):
+        app.add_api_route(f"/{asset_name}", lambda asset_name=asset_name: FileResponse(static_dir / asset_name), include_in_schema=False)
 
     return app
 

@@ -6,17 +6,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description"
     content="Откривай културни и природни дестинации в България, планирай пътувания и търси в дигитализирани исторически източници.">
-  <title>On the Road Bulgaria — открий България</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <title>На път.БГ — открий България</title>
+  <link rel="stylesheet" href="./styles.css?v=static2-6">
 </head>
 
 <body>
   <div class="announcement"><span class="announcement-dot"></span> Култура · Природа · Местни истории <span
       class="announcement-note">Демонстрационна версия · проверявай актуалните условия преди пътуване</span></div>
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="On the Road Bulgaria – начало">
-      <img class="brand-mark" src="/static/logo_without_text.png" alt="On the Road Bulgaria">
-      <span class="brand-copy"><strong>ON THE ROAD</strong><small>BULGARIA · ОТКРИВАЙ СЪС СМИСЪЛ</small></span>
+    <a class="brand" href="#home" aria-label="На път. БГ – начало">
+      <img class="brand-mark" src="./logo_without_text.png" alt="На път БГ">
+      <span class="brand-copy"><strong>НА ПЪТ БГ</strong><small>БЪЛГАРИЯ · ОТКРИВАЙ СЪС СМИСЪЛ</small></span>
     </a>
     <nav class="main-nav" aria-label="Основна навигация">
       <a class="nav-link active" href="#explore" data-nav="explore">Открий</a>
@@ -29,7 +29,7 @@
     <button class="mobile-menu" id="mobileMenu" aria-label="Отвори меню">☰</button>
   </header>
   <main>
-    <section id="home" class="hero shell">
+    <section id="home" class="hero shell hero-without-art">
       <div class="hero-copy">
         <div class="eyebrow"><span class="eyebrow-line"></span> ПЪТУВАНЕ СЪС СЪДЪРЖАНИЕ</div>
         <h1>България има<br><em>още истории.</em></h1>
@@ -40,7 +40,7 @@
         <div class="hero-footnote"><span class="tiny-spark">✳</span><span>По-бавни пътувания. По-дълбоки
             истории.<br><b>Повече България.</b></span></div>
       </div>
-      <div class="hero-art" aria-label="Стилизирана карта на България">
+      <div class="hero-art" aria-label="Стилизирана карта на България" hidden>
         <div class="map-label label-north">ДУНАВСКА РАВНИНА <i></i></div>
         <div class="map-label label-west">РИЛА <i></i></div>
         <div class="map-label label-south">РОДОПИ <i></i></div>
@@ -85,7 +85,7 @@
         <div class="art-caption"><span class="caption-icon">✳</span><span><b>Повече от дестинация.</b><small>Истории,
               които остават с теб.</small></span></div>
       </div>
-      <div class="hero-bottom-rule"><span>42° 41′ N &nbsp; 23° 19′ E</span><span>ОТКРИВАЙ МЕСТАТА ЗАД
+      <div class="hero-bottom-rule"><span>БЪЛГАРИЯ · ТВОЯТА ТОЧКА</span><span>ОТКРИВАЙ МЕСТАТА ЗАД
           ИСТОРИИТЕ</span><span>BG · 01 / 28</span></div>
     </section>
 
@@ -101,15 +101,13 @@
       <div class="explore-toolbar">
         <label class="search-box"><span>⌕</span><input id="destinationSearch"
             placeholder="Търси място, град или история…" autocomplete="off"><kbd>ENTER</kbd></label>
-        <label class="select-wrap"><span class="sr-only">Категория</span><select id="categoryFilter">
-            <option value="">Всички интереси</option>
-            <option value="история">История и наследство</option>
-            <option value="природа">Природа и еко-пътеки</option>
-            <option value="музей">Музеи и археология</option>
-            <option value="традиции">Традиции и занаяти</option>
-            <option value="вино">Вино и местна храна</option>
-            <option value="култура">Култура и архитектура</option>
-          </select><span>⌄</span></label>
+        <select id="categoryFilter" class="sr-only" aria-label="Категория">
+          <option value="">Всички места</option><option value="culture_history">История и култура</option>
+          <option value="sacred_spiritual">Духовност и наследство</option><option value="nature_adventure">Природа и приключения</option>
+          <option value="food_wine">Храна и вино</option>
+        </select>
+        <div id="categoryBubbles" class="category-bubbles" aria-label="Основни категории"></div>
+        <label class="province-filter"><span>Област</span><select id="provinceFilter" aria-label="Избери област"><option value="">Всички области</option><option>Благоевград</option><option>Бургас</option><option>Варна</option><option>Велико Търново</option><option>Видин</option><option>Враца</option><option>Габрово</option><option>Добрич</option><option>Кърджали</option><option>Кюстендил</option><option>Ловеч</option><option>Монтана</option><option>Пазарджик</option><option>Перник</option><option>Плевен</option><option>Пловдив</option><option>Разград</option><option>Русе</option><option>Силистра</option><option>Сливен</option><option>Смолян</option><option>София-град</option><option>София област</option><option>Стара Загора</option><option>Търговище</option><option>Хасково</option><option>Шумен</option><option>Ямбол</select></label>
         <button id="useLocation" class="btn btn-outline">◎ Близо до мен</button><button id="recommendationsButton"
           class="btn btn-outline">✳ За мен</button>
       </div>
@@ -162,11 +160,9 @@
               <div class="form-step">01</div>
               <div><b>Настрой пътуването</b><small>Промени параметрите по всяко време.</small></div>
             </div>
-            <div class="form-grid"><label class="field field-wide"><span>Начална точка · координати</span>
-                <div class="coordinates"><input id="startLat" type="number" step="any" value="42.6977" required
-                    aria-label="Географска ширина"><input id="startLon" type="number" step="any" value="23.3219"
-                    required aria-label="Географска дължина"></div><small class="field-help">По подразбиране: центърът
-                  на София. Можеш да въведеш други координати.</small>
+            <div class="form-grid"><label class="field field-wide"><span>Начална точка</span>
+                <div class="location-choice"><button type="button" class="btn btn-outline" id="plannerUseLocation">◎ Използвай моето местоположение</button><span id="plannerLocationLabel" class="field-help">Ще поискаме разрешение преди да използваме местоположението ти.</span></div>
+                <input id="startLat" type="hidden" value=""><input id="startLon" type="hidden" value="">
               </label>
               <label class="field"><span>Налично време</span><select id="timeBudget">
                   <option value="180">2–3 часа</option>
@@ -186,12 +182,10 @@
             </div>
             <div class="field"><span>Какво те привлича?</span>
               <div class="interest-chips" id="plannerInterests"><label><input type="checkbox"
-                    value="история"><span>История</span></label><label><input type="checkbox"
-                    value="култура"><span>Култура</span></label><label><input type="checkbox"
-                    value="природа"><span>Природа</span></label><label><input type="checkbox"
-                    value="музей"><span>Музеи</span></label><label><input type="checkbox"
-                    value="традиции"><span>Традиции</span></label><label><input type="checkbox" value="вино"><span>Храна
-                    и вино</span></label></div>
+                    value="culture_history"><span>История и култура</span></label><label><input type="checkbox"
+                    value="sacred_spiritual"><span>Духовност и наследство</span></label><label><input type="checkbox"
+                    value="nature_adventure"><span>Природа и приключения</span></label><label><input type="checkbox"
+                    value="food_wine"><span>Храна и вино</span></label></div>
             </div>
             <div class="route-selection-box">
               <div><b>Избери конкретни спирки</b><small>Можеш да свържеш места от различни градове и села. Избраните
@@ -299,7 +293,7 @@
         <div>
           <div class="eyebrow eyebrow-light"><span class="eyebrow-line"></span> ЗА ПРОЕКТА</div>
           <h2>Пътуване, което<br><em>свързва точките.</em></h2>
-          <p>On the Road Bulgaria обединява планирането на пътувания с дигитализирането на исторически книги и
+          <p>На път БГ обединява планирането на пътувания с дигитализирането на исторически книги и
             регионални публикации. Целта е да направим културното наследство, местните истории и по-малко познатите
             места по-лесни за откриване.</p><a class="btn btn-light" href="#explore">Започни да откриваш
             <span>↗</span></a>
@@ -325,7 +319,7 @@
           </article>
         </div>
       </div>
-      <div class="shell about-bottom"><span>ON THE ROAD BULGARIA</span><span>БЪЛГАРИЯ Е ПОВЕЧЕ ОТ ЕДНА ПОСОКА.</span><a
+      <div class="shell about-bottom"><span>На път БГ</span><span>БЪЛГАРИЯ Е ПОВЕЧЕ ОТ ЕДНА ПОСОКА.</span><a
           href="#privacy">Поверителност и условия ↗</a></div>
     </section>
     <section id="privacy" class="privacy-section shell">
@@ -339,8 +333,8 @@
   <footer class="footer shell">
 
     <a class="brand brand-small" href="#home">
-      <img class="brand-mark" src="/static/logo.png" alt="On the Road Bulgaria">
-      <span class="brand-copy"><strong>ON THE ROAD</strong><small>BULGARIA</small></span>
+      <img class="brand-mark" src="./logo.png" alt="На път БГ">
+      <span class="brand-copy"><strong>НА ПЪТ БГ</strong><small>БЪЛГАРИЯ Е ПОВЕЧЕ ОТ ЕДНА ПОСОКА.</small></span>
     </a>
     
     <p>Направено с любопитство към местата и историите на България.</p><span>© <span id="year"></span> · MVP 0.2</span>
@@ -363,13 +357,7 @@
       <p>Профилът е активен.</p><button class="btn btn-outline btn-full" id="logoutButton">Изход</button><button
         class="text-btn" id="showPreferences">Настройки на интересите ↓</button>
       <form id="preferencesForm" class="preferences-form hidden"><label class="field"><span>Любими теми</span>
-          <div class="interest-chips"><label><input type="checkbox"
-                value="история"><span>История</span></label><label><input type="checkbox"
-                value="природа"><span>Природа</span></label><label><input type="checkbox"
-                value="култура"><span>Култура</span></label><label><input type="checkbox"
-                value="музей"><span>Музеи</span></label><label><input type="checkbox"
-                value="традиции"><span>Традиции</span></label><label><input type="checkbox" value="вино"><span>Храна и
-                вино</span></label></div>
+          <div class="interest-chips"><label><input type="checkbox" value="culture_history"><span>История и култура</span></label><label><input type="checkbox" value="sacred_spiritual"><span>Духовност и наследство</span></label><label><input type="checkbox" value="nature_adventure"><span>Природа и приключения</span></label><label><input type="checkbox" value="food_wine"><span>Храна и вино</span></label></div>
         </label><label class="field"><span>Предпочитан транспорт</span><select id="prefTransport">
             <option value="car">Автомобил</option>
             <option value="walking">Пеша</option>
@@ -379,7 +367,7 @@
       </form>
     </div>
   </dialog>
-  <script src="/static/app.js?v=0.3.5"></script>
+  <script src="./app.js?v=static2-6"></script>
 </body>
 
 </html>

@@ -361,3 +361,5 @@ class SearchResult(BaseModel):
     copyright_status: str
     source_url: str | None = None
     bibliographic_reference: str | None = None
+    description: str | None = None
+    pdf_url: str | None = None

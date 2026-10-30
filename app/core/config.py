@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "replace-this-with-a-long-random-secret-before-deployment"
     access_token_minutes: int = 60
     upload_dir: Path = Path("./uploads")
+    archive_dir: Path = Path("./app/data/archive")
     max_upload_mb: int = 20
     max_pdf_pages: int = 200
     cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"

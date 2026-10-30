@@ -2,11 +2,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 import io
 import uuid
+import json
 import fitz
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.core.config import settings
 from app.db import get_db
 from app.dependencies import get_current_user, get_optional_user, require_admin
@@ -14,11 +16,42 @@ from app.models import BookSource, Destination, SourcePage, SourceReference, Tex
 from app.schemas import PageDestinationLinkRequest, ReviewTextRequest, SearchResult, SourceOut, SourcePageOut, SourceReferenceStatusUpdate
 from app.services.ocr import create_passages
 from app.services.background_jobs import run_ocr_job
+from app.api.routes.destinations import _search_terms
 
 router = APIRouter(prefix="/api", tags=["historical sources and OCR"])
 admin_router = APIRouter(prefix="/api/admin", tags=["administration"])
 ALLOWED_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".webp"}
 PUBLIC_COPYRIGHT_STATUS = {"public_domain", "licensed", "permission_granted"}
+
+
+def _folder_archive_results(q: str, limit: int) -> list[dict]:
+    index_dir = settings.archive_dir.resolve() / "index"
+    if not index_dir.is_dir():
+        return []
+    terms = [term.casefold() for term in _search_terms(q)]
+    results = []
+    for path in sorted(index_dir.glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        haystack = " ".join(str(record.get(key, "")) for key in ("title", "author", "description", "text")).casefold()
+        if not any(term in haystack for term in terms):
+            continue
+        pdf_name = Path(record.get("pdf_filename", "")).name
+        results.append({
+            "source_id": -1, "source_title": record.get("title") or pdf_name,
+            "author": record.get("author"), "publication_year": record.get("publication_year"),
+            "page_id": -1, "page_number": record.get("page_number", 1),
+            "passage": record.get("text", "")[:700], "description": record.get("description") or record.get("text", "")[:220],
+            "review_status": "reviewed", "verification_status": "verified",
+            "copyright_status": record.get("copyright_status", "unknown"), "source_url": None,
+            "bibliographic_reference": record.get("bibliographic_reference"),
+            "pdf_url": f"/archive-pdfs/{pdf_name}" if pdf_name else None,
+        })
+        if len(results) >= limit:
+            break
+    return results
 
 
 def _validate_upload(data: bytes, extension: str) -> None:
@@ -275,7 +308,8 @@ def search_historical_text(
     if len(q) < 2 or len(q) > 160:
         raise HTTPException(status_code=422, detail="Search query must contain 2–160 characters")
     limit = min(max(limit, 1), 50)
-    query = db.query(TextPassage, SourcePage, BookSource).join(SourcePage, TextPassage.source_page_id == SourcePage.id).join(BookSource, TextPassage.source_id == BookSource.id).filter(TextPassage.text.ilike(f"%{q}%"))
+    conditions = [TextPassage.text.ilike(f"%{term}%") for term in _search_terms(q)]
+    query = db.query(TextPassage, SourcePage, BookSource).join(SourcePage, TextPassage.source_page_id == SourcePage.id).join(BookSource, TextPassage.source_id == BookSource.id).filter(or_(*conditions))
     if not (user and user.is_admin):
         query = query.filter(
             SourcePage.review_status == "reviewed",
@@ -283,7 +317,7 @@ def search_historical_text(
             BookSource.copyright_status.in_(PUBLIC_COPYRIGHT_STATUS),
         )
     rows = query.order_by(BookSource.title, SourcePage.page_number).limit(limit).all()
-    result = []
+    result = _folder_archive_results(q, limit)
     for passage, page, source in rows:
         text = passage.text
         index = text.casefold().find(q.casefold())
